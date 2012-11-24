@@ -21,20 +21,12 @@
 
 PRODUCT_PACKAGES := \
     libfwdlockengine \
-    OpenWnn \
-    PinyinIME \
-    libWnnEngDic \
-    libWnnJpnDic \
-    libwnndict \
-    VideoEditor \
-    WAPPushManager
+    VideoEditor
 
 PRODUCT_PACKAGES += \
-    Galaxy4 \
     HoloSpiralWallpaper \
     LiveWallpapers \
     LiveWallpapersPicker \
-    MagicSmokeWallpapers \
     NoiseField \
     PhaseBeam \
     VisualizationWallpapers
