@@ -144,6 +144,12 @@ class EdifyGenerator(object):
                           p.device, p.mount_point))
       self.mounts.add(p.mount_point)
 
+  def Unmount(self, mount_point):
+    """Unmount the partition with the given mount_point."""
+    if mount_point in self.mounts:
+      self.script.append('unmount("%s");' % mount_point)
+      self.mounts.remove(mount_point)
+
   def UnpackPackageDir(self, src, dst):
     """Unpack a given directory from the OTA package into the given
     destination directory."""
@@ -257,3 +263,15 @@ class EdifyGenerator(object):
       data = open(os.path.join(input_path, "updater")).read()
     common.ZipWriteStr(output_zip, "META-INF/com/google/android/update-binary",
                        data, perms=0755)
+
+  def Backup(self, command):
+    self.script.append('package_extract_file("system/bin/backuptool.sh", '
+                       '"/tmp/backuptool.sh");')
+    self.script.append('package_extract_file("system/bin/backuptool.functions", '
+                       '"/tmp/backuptool.functions");')
+    self.script.append('set_perm(0, 0, 0755, "/tmp/backuptool.sh");')
+    self.script.append('set_perm(0, 0, 0644, "/tmp/backuptool.functions");')
+    self.script.append('run_program("/tmp/backuptool.sh", "%s");' % command)
+    if command == 'restore':
+      self.script.append('delete("/system/bin/backuptool.sh");')
+      self.script.append('delete("/system/bin/backuptool.functions");')
