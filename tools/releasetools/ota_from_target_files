@@ -21,9 +21,6 @@ a full OTA is produced.
 
 Usage:  ota_from_target_files [flags] input_target_files output_ota_package
 
-  -b  (--board_config)  <file>
-      Deprecated.
-
   -k (--package_key) <key> Key to use to sign the package (default is
       the value of default_system_dev_certificate from the input
       target-files's META/misc_info.txt, or
@@ -54,6 +51,10 @@ Usage:  ota_from_target_files [flags] input_target_files output_ota_package
 
   -d  (--override_device) <device>
       Override device-specific asserts. Can be a comma-separated list.
+
+  -b  (--backup_addons)
+      Backup addons in current system and restore them after setting
+      up the new system
 
 """
 
@@ -91,6 +92,7 @@ OPTIONS.omit_prereq = False
 OPTIONS.extra_script = None
 OPTIONS.aslr_mode = True
 OPTIONS.override_device = "auto"
+OPTIONS.backup_addons = False
 OPTIONS.worker_threads = 3
 
 def MostPopularKey(d, default):
@@ -400,6 +402,11 @@ def WriteFullOTAPackage(input_zip, output_zip):
   device_specific.FullOTA_Assertions()
   device_specific.FullOTA_InstallBegin()
 
+  if OPTIONS.backup_addons:
+    script.Mount("/system")
+    script.RunBackup("backup")
+    script.Unmount("/system")
+
   script.ShowProgress(0.5, 0)
 
   if OPTIONS.wipe_user_data:
@@ -420,6 +427,9 @@ def WriteFullOTAPackage(input_zip, output_zip):
 
   Item.GetMetadata(input_zip)
   Item.Get("system").SetPermissions(script)
+
+  if OPTIONS.backup_addons:
+    script.RunBackup("restore")
 
   common.CheckSize(boot_img.data, "boot.img", OPTIONS.info_dict)
   common.ZipWriteStr(output_zip, "boot.img", boot_img.data)
@@ -739,9 +749,7 @@ def WriteIncrementalOTAPackage(target_zip, source_zip, output_zip):
 def main(argv):
 
   def option_handler(o, a):
-    if o in ("-b", "--board_config"):
-      pass   # deprecated
-    elif o in ("-k", "--package_key"):
+    if o in ("-k", "--package_key"):
       OPTIONS.package_key = a
     elif o in ("-i", "--incremental_from"):
       OPTIONS.incremental_source = a
@@ -758,6 +766,8 @@ def main(argv):
         OPTIONS.aslr_mode = False
     elif o in ("-d", "--override_device"):
         OPTIONS.override_device = a
+    elif o in ("-b", "--backup_addons"):
+      OPTIONS.backup_addons = True
     elif o in ("--worker_threads"):
       OPTIONS.worker_threads = int(a)
     else:
@@ -765,9 +775,8 @@ def main(argv):
     return True
 
   args = common.ParseOptions(argv, __doc__,
-                             extra_opts="b:k:i:d:wne:a:",
-                             extra_long_opts=["board_config=",
-                                              "package_key=",
+                             extra_opts="k:i:d:wne:a:b",
+                             extra_long_opts=["package_key=",
                                               "incremental_from=",
                                               "wipe_user_data",
                                               "no_prereq",
@@ -775,6 +784,7 @@ def main(argv):
                                               "worker_threads=",
                                               "aslr_mode=",
                                               "override_device=",
+                                              "backup_addons",
                                               ],
                              extra_option_handler=option_handler)
 
