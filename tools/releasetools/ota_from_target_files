@@ -52,6 +52,9 @@ Usage:  ota_from_target_files [flags] input_target_files output_ota_package
   -a  (--aslr_mode)  <on|off>
       Specify whether to turn on ASLR for the package (on by default).
 
+  --no_recovery
+      Exclude recovery patch from the package.
+
 """
 
 import sys
@@ -88,6 +91,7 @@ OPTIONS.omit_prereq = False
 OPTIONS.extra_script = None
 OPTIONS.aslr_mode = True
 OPTIONS.worker_threads = 3
+OPTIONS.include_recovery_patch = True
 
 def MostPopularKey(d, default):
   """Given a dict, return the key corresponding to the largest
@@ -413,7 +417,8 @@ def WriteFullOTAPackage(input_zip, output_zip):
                                      OPTIONS.input_tmp, "BOOT")
   recovery_img = common.GetBootableImage("recovery.img", "recovery.img",
                                          OPTIONS.input_tmp, "RECOVERY")
-  MakeRecoveryPatch(OPTIONS.input_tmp, output_zip, recovery_img, boot_img)
+  if OPTIONS.include_recovery_patch:
+      MakeRecoveryPatch(OPTIONS.input_tmp, output_zip, recovery_img, boot_img)
 
   Item.GetMetadata(input_zip)
   Item.Get("system").SetPermissions(script)
@@ -660,12 +665,12 @@ def WriteIncrementalOTAPackage(target_zip, source_zip, output_zip):
     #
     # For older builds where recovery-resource.dat is not present, we
     # use only the boot image as the source.
-
-    MakeRecoveryPatch(OPTIONS.target_tmp, output_zip,
-                      target_recovery, target_boot)
-    script.DeleteFiles(["/system/recovery-from-boot.p",
-                        "/system/etc/install-recovery.sh"])
-    print "recovery image changed; including as patch from boot."
+    if OPTIONS.include_recovery_patch:
+        MakeRecoveryPatch(OPTIONS.target_tmp, output_zip,
+                          target_recovery, target_boot)
+        script.DeleteFiles(["/system/recovery-from-boot.p",
+                            "/system/etc/install-recovery.sh"])
+        print "recovery image changed; including as patch from boot."
   else:
     print "recovery image unchanged; skipping."
 
@@ -760,6 +765,8 @@ def main(argv):
         OPTIONS.aslr_mode = False
     elif o in ("--worker_threads"):
       OPTIONS.worker_threads = int(a)
+    elif o in ("--no_recovery"):
+      OPTIONS.include_recovery_patch = False
     else:
       return False
     return True
@@ -774,6 +781,7 @@ def main(argv):
                                               "extra_script=",
                                               "worker_threads=",
                                               "aslr_mode=",
+                                              "no_recovery",
                                               ],
                              extra_option_handler=option_handler)
 
