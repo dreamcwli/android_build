@@ -133,7 +133,11 @@ ifeq ($(TARGET_BUILD_VARIANT),user)
   endif
 else
   # Non-user builds should show detailed build information
-  BUILD_DISPLAY_ID := $(build_desc)
+  ifneq ($(filter my_%,$(TARGET_PRODUCT)),)
+    BUILD_DISPLAY_ID := $(BUILD_ID).$(BUILD_NUMBER)
+  else
+    BUILD_DISPLAY_ID := $(build_desc)
+  endif
 endif
 
 # Whether there is default locale set in PRODUCT_PROPERTY_OVERRIDES
