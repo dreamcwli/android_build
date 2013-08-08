@@ -1272,6 +1272,12 @@ else
   $(INTERNAL_OTA_PACKAGE_TARGET): OVERRIDE_DEVICE := $(TARGET_OTA_OVERRIDE_DEVICE)
 endif
 
+ifeq ($(TARGET_OTA_BACKUP_ADDONS),true)
+  $(INTERNAL_OTA_PACKAGE_TARGET): BACKUP_ADDONS := --backup_addons
+else
+  $(INTERNAL_OTA_PACKAGE_TARGET): BACKUP_ADDONS :=
+endif
+
 $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(DISTTOOLS)
 	@echo "Package OTA: $@"
 	$(hide) ./build/tools/releasetools/ota_from_target_files -v \
@@ -1279,6 +1285,7 @@ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(DISTTOOLS)
 	   -k $(KEY_CERT_PAIR) \
 	   $(NO_RECOVERY) \
 	   --override_device $(OVERRIDE_DEVICE) \
+	   $(BACKUP_ADDONS) \
 	   $(BUILT_TARGET_FILES_PACKAGE) $@
 
 .PHONY: otapackage
