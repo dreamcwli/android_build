@@ -1266,12 +1266,19 @@ else
   $(INTERNAL_OTA_PACKAGE_TARGET): NO_RECOVERY :=
 endif
 
+ifeq ($(TARGET_OTA_OVERRIDE_DEVICE),)
+  $(INTERNAL_OTA_PACKAGE_TARGET): OVERRIDE_DEVICE := auto
+else
+  $(INTERNAL_OTA_PACKAGE_TARGET): OVERRIDE_DEVICE := $(TARGET_OTA_OVERRIDE_DEVICE)
+endif
+
 $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(DISTTOOLS)
 	@echo "Package OTA: $@"
 	$(hide) ./build/tools/releasetools/ota_from_target_files -v \
 	   -p $(HOST_OUT) \
 	   -k $(KEY_CERT_PAIR) \
 	   $(NO_RECOVERY) \
+	   --override_device $(OVERRIDE_DEVICE) \
 	   $(BUILT_TARGET_FILES_PACKAGE) $@
 
 .PHONY: otapackage
