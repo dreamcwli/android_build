@@ -41,6 +41,9 @@ Usage:  ota_from_target_files [flags] input_target_files output_ota_package
   -e  (--extra_script)  <file>
       Insert the contents of file at the end of the update script.
 
+  -b  (--backup_addons)  <on|off>
+      Specify whether to backup addons for the system (off by default).
+
 """
 
 import sys
@@ -74,6 +77,7 @@ OPTIONS.prohibit_verbatim = set(("system/build.prop",))
 OPTIONS.patch_threshold = 0.95
 OPTIONS.wipe_user_data = False
 OPTIONS.extra_script = None
+OPTIONS.backup_addons = False
 OPTIONS.worker_threads = 3
 
 def MostPopularKey(d, default):
@@ -358,6 +362,11 @@ def WriteFullOTAPackage(input_zip, output_zip):
 
   script.ShowProgress(0.5, 0)
 
+  if OPTIONS.backup_addons:
+    script.Mount("/system")
+    script.BackupAddons()
+    script.UnmountAll()
+
   if OPTIONS.wipe_user_data:
     script.FormatPartition("/data")
 
@@ -373,6 +382,9 @@ def WriteFullOTAPackage(input_zip, output_zip):
 
   Item.GetMetadata(input_zip)
   Item.Get("system").SetPermissions(script)
+
+  if OPTIONS.backup_addons:
+    script.RestoreAddons()
 
   boot_img = common.GetBootableImage("boot.img", "boot.img",
                                      OPTIONS.input_tmp, "BOOT")
@@ -678,6 +690,11 @@ def main(argv):
       OPTIONS.wipe_user_data = True
     elif o in ("-e", "--extra_script"):
       OPTIONS.extra_script = a
+    elif o in ("-b", "--backup_addons"):
+      if a.lower() in ("on", "true", "yes"):
+        OPTIONS.backup_addons = True
+      else:
+        OPTIONS.backup_addons = False
     elif o in ("--worker_threads"):
       OPTIONS.worker_threads = int(a)
     else:
@@ -685,12 +702,13 @@ def main(argv):
     return True
 
   args = common.ParseOptions(argv, __doc__,
-                             extra_opts="k:i:d:we:",
+                             extra_opts="k:i:d:we:b:",
                              extra_long_opts=["package_key=",
                                               "incremental_from=",
                                               "wipe_user_data",
                                               "extra_script=",
                                               "worker_threads=",
+                                              "backup_addons=",
                                               ],
                              extra_option_handler=option_handler)
 

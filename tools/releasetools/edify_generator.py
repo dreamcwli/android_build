@@ -254,3 +254,23 @@ class EdifyGenerator(object):
       data = open(os.path.join(input_path, "updater")).read()
     common.ZipWriteStr(output_zip, "META-INF/com/google/android/update-binary",
                        data, perms=0755)
+
+  def BackupAddons(self):
+    self.script.append('package_extract_file("system/bin/backuptool.sh",'
+                       ' "/tmp/backuptool.sh");')
+    self.script.append('package_extract_file("system/bin/backuptool.functions",'
+                       ' "/tmp/backuptool.functions");')
+    self.script.append('set_perm(0, 0, 0755, "/tmp/backuptool.sh");')
+    self.script.append('set_perm(0, 0, 0644, "/tmp/backuptool.functions");')
+    self.script.append('run_program("/tmp/backuptool.sh", "backup");')
+
+  def RestoreAddons(self):
+    self.script.append('package_extract_file("system/bin/backuptool.sh",'
+                       ' "/tmp/backuptool.sh");')
+    self.script.append('package_extract_file("system/bin/backuptool.functions",'
+                       ' "/tmp/backuptool.functions");')
+    self.script.append('set_perm(0, 0, 0755, "/tmp/backuptool.sh");')
+    self.script.append('set_perm(0, 0, 0644, "/tmp/backuptool.functions");')
+    self.script.append('run_program("/tmp/backuptool.sh", "restore");')
+    self.script.append('delete("/system/bin/backuptool.sh");')
+    self.script.append('delete("/system/bin/backuptool.functions");')
