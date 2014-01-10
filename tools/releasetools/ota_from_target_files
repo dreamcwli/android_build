@@ -44,6 +44,10 @@ Usage:  ota_from_target_files [flags] input_target_files output_ota_package
   -b  (--backup_addons)  <on|off>
       Specify whether to backup addons for the system (off by default).
 
+  -d  (--assert_device)  <device|auto>
+      Assert the device is in the comma-separated device list (auto by
+      default).
+
 """
 
 import sys
@@ -78,6 +82,7 @@ OPTIONS.patch_threshold = 0.95
 OPTIONS.wipe_user_data = False
 OPTIONS.extra_script = None
 OPTIONS.backup_addons = False
+OPTIONS.assert_device = "auto"
 OPTIONS.worker_threads = 3
 
 def MostPopularKey(d, default):
@@ -288,7 +293,10 @@ def SignOutput(temp_zip_name, output_zip_name):
 
 
 def AppendAssertions(script, input_zip):
-  device = GetBuildProp("ro.product.device", input_zip)
+  if OPTIONS.assert_device == "auto":
+    device = GetBuildProp("ro.product.device", input_zip)
+  else:
+    device = OPTIONS.assert_device
   script.AssertDevice(device)
 
 
@@ -695,6 +703,8 @@ def main(argv):
         OPTIONS.backup_addons = True
       else:
         OPTIONS.backup_addons = False
+    elif o in ("-d", "--assert_device"):
+      OPTIONS.assert_device = a
     elif o in ("--worker_threads"):
       OPTIONS.worker_threads = int(a)
     else:
@@ -702,13 +712,14 @@ def main(argv):
     return True
 
   args = common.ParseOptions(argv, __doc__,
-                             extra_opts="k:i:d:we:b:",
+                             extra_opts="k:i:d:we:b:d:",
                              extra_long_opts=["package_key=",
                                               "incremental_from=",
                                               "wipe_user_data",
                                               "extra_script=",
                                               "worker_threads=",
                                               "backup_addons=",
+                                              "assert_device=",
                                               ],
                              extra_option_handler=option_handler)
 
